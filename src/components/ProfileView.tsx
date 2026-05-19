@@ -1,14 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { ProfileData } from '../types';
-import { Link2 } from 'lucide-react';
+import { Link2, Instagram, Twitter, Youtube, Github, Linkedin, Mail, Facebook } from 'lucide-react';
 import { formatImageUrl } from '../utils';
+
+// Tiktok isn't in lucide, so we'll use a substitute or generic link icon
+const PlatformIcon = ({ platform }: { platform: string }) => {
+  switch (platform) {
+    case 'instagram': return <Instagram size={18} />;
+    case 'twitter': return <Twitter size={18} />;
+    case 'youtube': return <Youtube size={18} />;
+    case 'github': return <Github size={18} />;
+    case 'linkedin': return <Linkedin size={18} />;
+    case 'facebook': return <Facebook size={18} />;
+    case 'mail': return <Mail size={18} />;
+    default: return <Link2 size={18} />; // generic for tiktok/others
+  }
+};
 
 interface ProfileViewProps {
   data: ProfileData;
 }
 
 export function ProfileView({ data }: ProfileViewProps) {
-  const { name, bio, avatarUrl, links, appearance } = data;
+  const { name, bio, avatarUrl, links, socials = [], appearance } = data;
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
@@ -67,8 +81,26 @@ export function ProfileView({ data }: ProfileViewProps) {
           {bio}
         </p>
 
+        {/* Social Icons */}
+        {socials && socials.length > 0 && (
+          <div className="flex items-center gap-4 mt-6 flex-wrap justify-center">
+            {socials.map((social) => (
+              <a 
+                key={social.id}
+                href={social.url.startsWith('http') || social.url.startsWith('mailto:') ? social.url : `https://${social.url}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="opacity-70 hover:opacity-100 transition-opacity hover:-translate-y-1 transform duration-200"
+                style={{ color: appearance.textColor }}
+              >
+                <PlatformIcon platform={social.platform} />
+              </a>
+            ))}
+          </div>
+        )}
+
         {/* Links */}
-        <div className="w-full mt-10 space-y-3 flex-1 flex flex-col">
+        <div className="w-full mt-6 space-y-3 flex-1 flex flex-col">
           {links.map((link) => (
             <a
               key={link.id}

@@ -8,13 +8,38 @@ import { defaultData, ProfileData } from './types';
 import { decodeData, encodeData } from './utils';
 import { ProfileView } from './components/ProfileView';
 import { EditorView } from './components/EditorView';
+import { AuthView } from './components/AuthView';
 import { Smartphone, Monitor } from 'lucide-react';
-import { getShortLinkData } from './lib/supabase';
+import { getShortLinkData, supabase } from './lib/supabase';
+import { Session } from '@supabase/supabase-js';
 
 export default function App() {
-  const [data, setData] = useState<ProfileData>(defaultData);
+  const [data, setData] = useState<ProfileData>(() => {
+    // Attempt to load from localStorage as fallback initially
+    try {
+      const saved = localStorage.getItem('linkbase_draft');
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return defaultData;
+  });
   const [mode, setMode] = useState<'editor' | 'view' | 'loading' | 'error'>('loading');
   const [showMobilePreview, setShowMobilePreview] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    // Verificando e inscrevendo o estado de autenticação
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const loadParams = async () => {
@@ -64,12 +89,17 @@ export default function App() {
 
   // Update "?e=" automatically in URL as state changes, so the user's address bar is always their save state.
   useEffect(() => {
-    if (mode === 'editor') {
+    if (mode === 'editor' && session) {
       const encoded = encodeData(data);
       // Replacing state to keep history clean
       window.history.replaceState(null, '', `?e=${encoded}`);
+      
+      // Save locally to prevent data loss
+      try {
+        localStorage.setItem('linkbase_draft', JSON.stringify(data));
+      } catch(e) {}
     }
-  }, [data, mode]);
+  }, [data, mode, session]);
 
   const handleShare = () => {
     const encoded = encodeData(data);
@@ -88,6 +118,11 @@ export default function App() {
   // PUBLIC VIEW MODE: Take over whole screen
   if (mode === 'view') {
     return <ProfileView data={data} />;
+  }
+
+  // EDITOR MODE: REQUER LOGIN
+  if (!session) {
+    return <AuthView />;
   }
 
   // EDITOR MODE: Split screen on desktop, togglable on mobile

@@ -13,11 +13,18 @@ export interface ProfileAppearance {
   fontFamily: 'font-sans' | 'font-outfit';
 }
 
+export interface SocialLink {
+  id: string;
+  platform: 'instagram' | 'twitter' | 'github' | 'linkedin' | 'youtube' | 'facebook' | 'tiktok' | 'mail';
+  url: string;
+}
+
 export interface ProfileData {
   name: string;
   bio: string;
   avatarUrl: string;
   links: ProfileLink[];
+  socials: SocialLink[];
   appearance: ProfileAppearance;
 }
 
@@ -29,6 +36,7 @@ export const defaultData: ProfileData = {
     { id: '1', title: 'Acesse meu Portfólio', url: 'https://example.com' },
     { id: '2', title: 'Siga-me no Instagram', url: 'https://instagram.com' }
   ],
+  socials: [],
   appearance: {
     backgroundColor: '#f3f4f6', 
     textColor: '#111827',

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { defaultData, ProfileData } from '../types';
 import { generateId, formatImageUrl } from '../utils';
-import { Plus, Trash2, GripVertical, Image as ImageIcon, Link as LinkIcon, Settings2, Palette, Check, Copy, Share, ExternalLink } from 'lucide-react';
-import { createShortLink } from '../lib/supabase';
+import { Plus, Trash2, GripVertical, Image as ImageIcon, Link as LinkIcon, Settings2, Palette, Check, Copy, Share, ExternalLink, LogOut } from 'lucide-react';
+import { createShortLink, supabase } from '../lib/supabase';
 
 interface EditorViewProps {
   data: ProfileData;
@@ -13,13 +13,16 @@ interface EditorViewProps {
 export function EditorView({ data, onChange, onShare }: EditorViewProps) {
   const [activeTab, setActiveTab] = useState<'content' | 'appearance'>('content');
   const [copied, setCopied] = useState(false);
-  const [copiedEdit, setCopiedEdit] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
 
   const updateField = (field: keyof ProfileData, value: any) => {
     onChange({ ...data, [field]: value });
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
   };
 
   const updateAppearance = (field: keyof ProfileData['appearance'], value: any) => {
@@ -47,6 +50,23 @@ export function EditorView({ data, onChange, onShare }: EditorViewProps) {
 
   const removeLink = (id: string) => {
     updateField('links', data.links.filter(link => link.id !== id));
+  };
+
+  const addSocialLink = () => {
+    updateField('socials', [
+      ...data.socials,
+      { id: generateId(), platform: 'instagram', url: '' }
+    ]);
+  };
+
+  const updateSocialLink = (id: string, field: 'platform' | 'url', value: string) => {
+    updateField('socials', data.socials.map(link => 
+      link.id === id ? { ...link, [field]: value } : link
+    ));
+  };
+
+  const removeSocialLink = (id: string) => {
+    updateField('socials', data.socials.filter(link => link.id !== id));
   };
 
   const moveLink = (index: number, direction: -1 | 1) => {
@@ -86,23 +106,27 @@ export function EditorView({ data, onChange, onShare }: EditorViewProps) {
     }
   };
 
-  const handleCopyEditUrl = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopiedEdit(true);
-    setTimeout(() => setCopiedEdit(false), 2000);
-  };
-
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="p-8 pb-4">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-            <div className="w-4 h-4 border-2 border-white rotate-45"></div>
+      <div className="p-8 pb-4 flex items-center justify-between shrink-0">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+              <div className="w-4 h-4 border-2 border-white rotate-45"></div>
+            </div>
+            <h1 className="text-xl font-bold tracking-tight">LinkBase</h1>
           </div>
-          <h1 className="text-xl font-bold tracking-tight">LinkBase</h1>
+          <p className="text-sm text-slate-500">Link in Bio Dinâmico</p>
         </div>
-        <p className="text-sm text-slate-500">Organizador Estático • Zero Banco de Dados</p>
+        <button 
+          onClick={handleLogout}
+          className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50 flex items-center gap-2"
+          title="Sair"
+        >
+          <LogOut size={18} />
+          <span className="text-sm font-semibold hidden sm:block">Sair</span>
+        </button>
       </div>
 
       {/* Tabs */}
@@ -218,11 +242,133 @@ export function EditorView({ data, onChange, onShare }: EditorViewProps) {
                 )}
               </div>
             </div>
+
+            {/* Social Links Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Redes Sociais</label>
+                <button onClick={addSocialLink} className="text-[11px] text-blue-600 font-semibold">+ Ícone</button>
+              </div>
+              
+              <div className="space-y-2">
+                {data.socials?.map((social) => (
+                  <div key={social.id} className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-3">
+                    <select 
+                      value={social.platform} 
+                      onChange={(e) => updateSocialLink(social.id, 'platform', e.target.value)}
+                      className="text-xs border border-slate-200 rounded p-1 bg-white outline-none"
+                    >
+                      <option value="instagram">Instagram</option>
+                      <option value="twitter">X (Twitter)</option>
+                      <option value="youtube">YouTube</option>
+                      <option value="github">GitHub</option>
+                      <option value="linkedin">LinkedIn</option>
+                      <option value="tiktok">TikTok</option>
+                      <option value="facebook">Facebook</option>
+                      <option value="mail">Email</option>
+                    </select>
+                    
+                    <input 
+                      type="url" 
+                      value={social.url}
+                      onChange={(e) => updateSocialLink(social.id, 'url', e.target.value)}
+                      placeholder="https://"
+                      className="flex-1 text-xs text-slate-500 bg-white border border-slate-200 rounded p-1.5 outline-none focus:border-slate-400"
+                    />
+                    
+                    <button 
+                      onClick={() => removeSocialLink(social.id)}
+                      className="w-6 h-6 rounded hover:bg-red-50 flex items-center justify-center text-slate-400 hover:text-red-500 cursor-pointer"
+                      title="Excluir rede social"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+                
+                {(!data.socials || data.socials.length === 0) && (
+                  <div className="p-4 text-center text-[10px] text-slate-400 bg-slate-50 border border-slate-200 rounded-lg border-dashed">
+                      Nenhum ícone social adicionado.
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
         {activeTab === 'appearance' && (
           <div className="space-y-6 pb-6 w-full">
+            {/* Themes / Presets */}
+            <div className="space-y-4">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Temas Prontos</label>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={() => onChange({ 
+                    ...data, 
+                    appearance: { ...data.appearance, backgroundColor: '#f3f4f6', textColor: '#1a1a1a', buttonColor: '#1a1a1a', buttonTextColor: '#ffffff' } 
+                  })}
+                  className="p-3 border border-slate-200 rounded-lg bg-slate-50 hover:bg-slate-100 flex flex-col gap-2 transition-colors"
+                >
+                  <div className="flex gap-2 w-full h-8 cursor-pointer pointer-events-none">
+                    <div className="flex-1 bg-[#f3f4f6] rounded border border-slate-200 h-full flex flex-col justify-center items-center gap-1">
+                      <div className="w-6 h-1 bg-[#1a1a1a] rounded"></div>
+                      <div className="w-4 h-1 bg-[#1a1a1a] rounded opacity-50"></div>
+                    </div>
+                  </div>
+                  <span className="text-xs font-semibold text-center w-full">Claro Minimalista</span>
+                </button>
+
+                <button 
+                  onClick={() => onChange({ 
+                    ...data, 
+                    appearance: { ...data.appearance, backgroundColor: '#09090b', textColor: '#fafafa', buttonColor: '#ffffff', buttonTextColor: '#09090b' } 
+                  })}
+                  className="p-3 border border-slate-200 rounded-lg bg-slate-50 hover:bg-slate-100 flex flex-col gap-2 transition-colors"
+                >
+                  <div className="flex gap-2 w-full h-8 cursor-pointer pointer-events-none">
+                    <div className="flex-1 bg-[#09090b] rounded border border-slate-200 h-full flex flex-col justify-center items-center gap-1">
+                      <div className="w-6 h-1 bg-[#fafafa] rounded"></div>
+                      <div className="w-4 h-1 bg-[#fafafa] rounded opacity-50"></div>
+                    </div>
+                  </div>
+                  <span className="text-xs font-semibold text-center w-full">Escuro Modern</span>
+                </button>
+
+                <button 
+                  onClick={() => onChange({ 
+                    ...data, 
+                    appearance: { ...data.appearance, backgroundColor: '#fdf4ff', textColor: '#701a75', buttonColor: '#c026d3', buttonTextColor: '#ffffff' } 
+                  })}
+                  className="p-3 border border-slate-200 rounded-lg bg-slate-50 hover:bg-slate-100 flex flex-col gap-2 transition-colors"
+                >
+                  <div className="flex gap-2 w-full h-8 cursor-pointer pointer-events-none">
+                    <div className="flex-1 bg-[#fdf4ff] rounded border border-slate-200 h-full flex flex-col justify-center items-center gap-1">
+                      <div className="w-6 h-1 bg-[#701a75] rounded"></div>
+                      <div className="w-4 h-1 bg-[#701a75] rounded opacity-50"></div>
+                    </div>
+                  </div>
+                  <span className="text-xs font-semibold text-center w-full">Rosa Pastel</span>
+                </button>
+                
+                <button 
+                  onClick={() => onChange({ 
+                    ...data, 
+                    appearance: { ...data.appearance, backgroundColor: '#0f172a', textColor: '#e2e8f0', buttonColor: '#3b82f6', buttonTextColor: '#ffffff' } 
+                  })}
+                  className="p-3 border border-slate-200 rounded-lg bg-slate-50 hover:bg-slate-100 flex flex-col gap-2 transition-colors"
+                >
+                  <div className="flex gap-2 w-full h-8 cursor-pointer pointer-events-none">
+                    <div className="flex-1 bg-[#0f172a] rounded border border-slate-200 h-full flex flex-col justify-center items-center gap-1">
+                      <div className="w-6 h-1 bg-[#e2e8f0] rounded"></div>
+                      <div className="w-4 h-1 bg-[#e2e8f0] rounded opacity-50"></div>
+                    </div>
+                  </div>
+                  <span className="text-xs font-semibold text-center w-full">Tech Azul</span>
+                </button>
+              </div>
+            </div>
+
             {/* Colors */}
             <div className="space-y-4">
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Cores</label>
@@ -359,14 +505,6 @@ export function EditorView({ data, onChange, onShare }: EditorViewProps) {
           >
             {isGenerating ? <div className="w-4 h-4 rounded-full border-2 border-white animate-spin border-t-transparent"></div> : (copied ? <Check size={16} /> : <LinkIcon size={16} />)}
             {copied ? "Link Copiado!" : (isGenerating ? "Gerando..." : "Gerar Link Curto (Supabase)")}
-          </button>
-          
-          <button 
-            onClick={handleCopyEditUrl}
-            className="w-full bg-white border border-slate-200 text-slate-800 h-10 rounded-lg font-bold text-sm hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
-          >
-            {copiedEdit ? <Check size={16} /> : <Settings2 size={16} />}
-            {copiedEdit ? "URL Copiada!" : "Copiar Link de Edição (Privado)"}
           </button>
         </div>
         <p className="text-[10px] text-slate-500 text-center px-4">
