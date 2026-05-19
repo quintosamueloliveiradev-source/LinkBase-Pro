@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ProfileData } from '../types';
-import { Link2, Instagram, Twitter, Youtube, Github, Linkedin, Mail, Facebook } from 'lucide-react';
+import { Link2, Instagram, Twitter, Youtube, Github, Linkedin, Mail, Facebook, BadgeCheck } from 'lucide-react';
 import { formatImageUrl } from '../utils';
 
 // Tiktok isn't in lucide, so we'll use a substitute or generic link icon
@@ -22,21 +22,75 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ data }: ProfileViewProps) {
-  const { name, bio, avatarUrl, links, socials = [], appearance } = data;
+  const { name, bio, avatarUrl, verified, links, socials = [], appearance } = data;
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     setImageError(false);
   }, [avatarUrl]);
 
-  const fontClass = appearance.fontFamily === 'font-outfit' ? 'font-outfit' : 'font-sans';
+  const getFontClass = () => {
+    switch(appearance.fontFamily) {
+      case 'font-outfit': return 'font-outfit';
+      case 'font-mono': return 'font-mono';
+      case 'font-serif': return 'font-serif';
+      default: return 'font-sans';
+    }
+  };
+  
+  const fontClass = getFontClass();
   
   const getBorderRadius = () => {
     switch (appearance.buttonStyle) {
-      case 'pill': return '9999px';
+      case 'pill':
+      case 'outline':
+      case 'soft':
+        return '9999px';
       case 'rounded': return '0.75rem';
-      case 'square': return '0px';
+      case 'square': 
+      case 'shadow':
+        return '0px';
       default: return '0.5rem';
+    }
+  };
+
+  const getButtonStyle = () => {
+    const baseStyle: React.CSSProperties = {
+      borderRadius: getBorderRadius(),
+      border: '2px solid transparent',
+      transition: 'all 0.2s ease',
+    };
+
+    switch (appearance.buttonStyle) {
+      case 'outline':
+        baseStyle.backgroundColor = 'transparent';
+        baseStyle.border = `2px solid ${appearance.buttonColor}`;
+        baseStyle.color = appearance.buttonColor;
+        break;
+      case 'soft':
+        baseStyle.backgroundColor = appearance.buttonColor + '15'; // 15% opacity hex
+        baseStyle.color = appearance.buttonColor;
+        break;
+      case 'shadow':
+        baseStyle.backgroundColor = appearance.buttonColor;
+        baseStyle.color = appearance.buttonTextColor;
+        baseStyle.boxShadow = `4px 4px 0px 0px ${appearance.textColor}`;
+        baseStyle.border = `2px solid ${appearance.textColor}`;
+        break;
+      default:
+        baseStyle.backgroundColor = appearance.buttonColor;
+        baseStyle.color = appearance.buttonTextColor;
+    }
+    
+    return baseStyle;
+  };
+  
+  const getAnimationClass = (animation?: string) => {
+    switch(animation) {
+      case 'pulse': return 'animate-pulse';
+      case 'bounce': return 'animate-bounce';
+      case 'wobble': return 'animate-wobble';
+      default: return '';
     }
   };
 
@@ -44,7 +98,13 @@ export function ProfileView({ data }: ProfileViewProps) {
     <div 
       className={`min-h-[100dvh] lg:min-h-full w-full flex flex-col items-center pt-10 px-6 pb-10 ${fontClass} transition-colors duration-300 relative`}
       style={{ 
-        backgroundColor: appearance.backgroundColor, 
+        backgroundColor: appearance.backgroundType === 'gradient' ? undefined : appearance.backgroundColor,
+        backgroundImage: appearance.backgroundType === 'gradient' 
+          ? `linear-gradient(135deg, ${appearance.backgroundColor} 0%, ${appearance.gradientColors || '#ffffff'} 100%)` 
+          : (appearance.backgroundType === 'image' && appearance.backgroundImage ? `url(${appearance.backgroundImage})` : undefined),
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
         color: appearance.textColor 
       }}
     >
@@ -58,7 +118,7 @@ export function ProfileView({ data }: ProfileViewProps) {
             alt={name} 
             referrerPolicy="no-referrer"
             onError={() => setImageError(true)}
-            className="w-20 h-20 rounded-full object-cover mb-4 ring-2 ring-slate-100 shadow-sm transition-all"
+            className="w-24 h-24 rounded-full object-cover mb-4 ring-4 ring-slate-100 shadow-sm transition-all"
             style={{ 
                borderColor: appearance.buttonColor + '20',
                backgroundColor: appearance.buttonColor + '10' 
@@ -66,24 +126,25 @@ export function ProfileView({ data }: ProfileViewProps) {
           />
         ) : (
           <div 
-            className="w-20 h-20 rounded-full mb-4 ring-2 ring-slate-100 flex items-center justify-center text-slate-400"
-            style={{ backgroundColor: appearance.buttonColor + '10', color: appearance.buttonColor }}
+            className="w-24 h-24 rounded-full mb-4 ring-4 ring-slate-100 flex items-center justify-center text-slate-400"
+            style={{ backgroundColor: appearance.buttonColor + '10', color: appearance.buttonColor, borderColor: appearance.buttonColor + '20' }}
           >
-            <span className="text-3xl font-bold">{name.charAt(0)}</span>
+            <span className="text-4xl font-bold">{name?.charAt(0)}</span>
           </div>
         )}
 
         {/* Name & Bio */}
-        <h1 className="text-lg font-bold tracking-tight text-center" style={{ color: appearance.textColor }}>
+        <h1 className="text-xl font-bold tracking-tight text-center flex items-center justify-center gap-1.5" style={{ color: appearance.textColor }}>
           {name}
+          {verified && <BadgeCheck size={20} className="text-blue-500 fill-blue-500/20" />}
         </h1>
-        <p className="text-[12px] opacity-70 text-center mt-1 leading-relaxed px-4">
+        <p className="text-[13px] opacity-80 text-center mt-2 leading-relaxed px-4">
           {bio}
         </p>
 
         {/* Social Icons */}
         {socials && socials.length > 0 && (
-          <div className="flex items-center gap-4 mt-6 flex-wrap justify-center">
+          <div className="flex items-center gap-5 mt-6 flex-wrap justify-center">
             {socials.map((social) => (
               <a 
                 key={social.id}
@@ -100,22 +161,17 @@ export function ProfileView({ data }: ProfileViewProps) {
         )}
 
         {/* Links */}
-        <div className="w-full mt-6 space-y-3 flex-1 flex flex-col">
+        <div className="w-full mt-8 space-y-4 flex-1 flex flex-col">
           {links.map((link) => (
             <a
               key={link.id}
               href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="group block w-full text-center py-3 px-6 text-[11px] font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-95 active:shadow-sm"
-              style={{
-                backgroundColor: appearance.buttonColor,
-                color: appearance.buttonTextColor,
-                borderRadius: getBorderRadius(),
-                boxShadow: `0 2px 8px 0 ${appearance.buttonColor}40`
-              }}
+              className={`group block w-full text-center py-4 px-6 text-[13px] font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 active:shadow-sm ${getAnimationClass(link.animation)}`}
+              style={getButtonStyle()}
             >
-              {link.title || "Untitled Link"}
+              {link.title || "Link sem título"}
             </a>
           ))}
         </div>

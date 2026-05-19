@@ -160,13 +160,24 @@ export function EditorView({ data, onChange, onShare }: EditorViewProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="block text-xs font-medium text-slate-700">Nome no Perfil</label>
-                    <input 
-                      type="text" 
-                      value={data.name}
-                      onChange={(e) => updateField('name', e.target.value)}
-                      placeholder="Seu Nome ou Marca"
-                      className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-black"
-                    />
+                    <div className="flex bg-slate-50 border border-slate-200 rounded-md focus-within:ring-1 focus-within:ring-black">
+                      <input 
+                        type="text" 
+                        value={data.name}
+                        onChange={(e) => updateField('name', e.target.value)}
+                        placeholder="Seu Nome ou Marca"
+                        className="w-full px-3 py-2 text-sm bg-transparent border-none focus:outline-none focus:ring-0"
+                      />
+                      <label className="flex items-center gap-2 pr-3 cursor-pointer pl-2 border-l border-slate-200">
+                        <input 
+                          type="checkbox" 
+                          checked={data.verified || false}
+                          onChange={(e) => updateField('verified', e.target.checked)}
+                          className="w-4 h-4 rounded text-blue-500 focus:ring-blue-500 cursor-pointer"
+                        />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Verificado</span>
+                      </label>
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <label className="block text-xs font-medium text-slate-700">URL da Foto</label>
@@ -223,6 +234,19 @@ export function EditorView({ data, onChange, onShare }: EditorViewProps) {
                         placeholder="https://url-de-destino.com"
                         className="w-full text-[10px] text-slate-500 bg-transparent border-none placeholder:text-slate-300 focus:outline-none p-0 focus:ring-0"
                       />
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200/60">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">Animação:</span>
+                        <select
+                          value={link.animation || 'none'}
+                          onChange={(e) => updateLink(link.id, 'animation' as any, e.target.value)}
+                          className="bg-white border border-slate-200 text-[10px] px-1 py-0.5 rounded text-slate-600 outline-none"
+                        >
+                          <option value="none">Nenhuma</option>
+                          <option value="pulse">Pulse</option>
+                          <option value="bounce">Bounce</option>
+                          <option value="wobble">Wobble</option>
+                        </select>
+                      </div>
                     </div>
                     
                     <button 
@@ -369,9 +393,29 @@ export function EditorView({ data, onChange, onShare }: EditorViewProps) {
               </div>
             </div>
 
+            {/* Background Settings */}
+            <div className="space-y-4">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Fundo da Página</label>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => updateAppearance('backgroundType', 'solid')}
+                  className={`p-3 rounded-lg border text-center transition-all ${data.appearance.backgroundType === 'solid' || !data.appearance.backgroundType  ? 'border-black ring-1 ring-black bg-slate-50' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}
+                >
+                  <span className="text-xs font-semibold">Sólido</span>
+                </button>
+                <button
+                  onClick={() => updateAppearance('backgroundType', 'gradient')}
+                  className={`p-3 rounded-lg border text-center transition-all ${data.appearance.backgroundType === 'gradient' ? 'border-black ring-1 ring-black bg-slate-50' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}
+                >
+                  <span className="text-xs font-semibold">Gradiente</span>
+                </button>
+              </div>
+            </div>
+
             {/* Colors */}
             <div className="space-y-4">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Cores</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Cores base</label>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg h-12">
@@ -381,8 +425,20 @@ export function EditorView({ data, onChange, onShare }: EditorViewProps) {
                     onChange={(e) => updateAppearance('backgroundColor', e.target.value)}
                     className="w-6 h-6 rounded shadow-inner border border-slate-300 cursor-pointer p-0 bg-transparent shrink-0"
                   />
-                  <span className="text-xs font-medium truncate">Fundo da Página</span>
+                  <span className="text-xs font-medium truncate">Cor 1 (Fundo)</span>
                 </div>
+
+                {data.appearance.backgroundType === 'gradient' && (
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg h-12">
+                    <input 
+                      type="color" 
+                      value={data.appearance.gradientColors || '#ffffff'}
+                      onChange={(e) => updateAppearance('gradientColors', e.target.value)}
+                      className="w-6 h-6 rounded shadow-inner border border-slate-300 cursor-pointer p-0 bg-transparent shrink-0"
+                    />
+                    <span className="text-xs font-medium truncate">Cor 2 (Grad)</span>
+                  </div>
+                )}
                 
                 <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg h-12">
                   <input 
@@ -433,6 +489,18 @@ export function EditorView({ data, onChange, onShare }: EditorViewProps) {
                 >
                   <span className="font-outfit text-sm font-medium block">Outfit</span>
                 </button>
+                <button
+                  onClick={() => updateAppearance('fontFamily', 'font-mono')}
+                  className={`p-3 rounded-lg border text-center transition-all ${data.appearance.fontFamily === 'font-mono' ? 'border-black ring-1 ring-black bg-slate-50' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}
+                >
+                  <span className="font-mono text-sm font-medium block">Mono</span>
+                </button>
+                <button
+                  onClick={() => updateAppearance('fontFamily', 'font-serif')}
+                  className={`p-3 rounded-lg border text-center transition-all ${data.appearance.fontFamily === 'font-serif' ? 'border-black ring-1 ring-black bg-slate-50' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}
+                >
+                  <span className="font-serif text-sm font-medium block">Serif</span>
+                </button>
               </div>
             </div>
 
@@ -445,7 +513,7 @@ export function EditorView({ data, onChange, onShare }: EditorViewProps) {
                   onClick={() => updateAppearance('buttonStyle', 'pill')}
                   className={`py-3 px-2 rounded-lg border flex flex-col items-center justify-center gap-3 transition-all ${data.appearance.buttonStyle === 'pill' ? 'border-black ring-1 ring-black bg-slate-50' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}
                 >
-                  <div className="w-10 h-3 bg-slate-400 rounded-full"></div>
+                  <div className="w-10 h-3 bg-slate-800 rounded-full"></div>
                   <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">Pílula</span>
                 </button>
                 
@@ -453,7 +521,7 @@ export function EditorView({ data, onChange, onShare }: EditorViewProps) {
                   onClick={() => updateAppearance('buttonStyle', 'rounded')}
                   className={`py-3 px-2 rounded-lg border flex flex-col items-center justify-center gap-3 transition-all ${data.appearance.buttonStyle === 'rounded' ? 'border-black ring-1 ring-black bg-slate-50' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}
                 >
-                  <div className="w-10 h-3 bg-slate-400 rounded-md"></div>
+                  <div className="w-10 h-3 bg-slate-800 rounded-md"></div>
                   <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">Arredondado</span>
                 </button>
 
@@ -461,8 +529,32 @@ export function EditorView({ data, onChange, onShare }: EditorViewProps) {
                   onClick={() => updateAppearance('buttonStyle', 'square')}
                   className={`py-3 px-2 rounded-lg border flex flex-col items-center justify-center gap-3 transition-all ${data.appearance.buttonStyle === 'square' ? 'border-black ring-1 ring-black bg-slate-50' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}
                 >
-                  <div className="w-10 h-3 bg-slate-400 rounded-none"></div>
+                  <div className="w-10 h-3 bg-slate-800 rounded-none"></div>
                   <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">Quadrado</span>
+                </button>
+
+                <button
+                  onClick={() => updateAppearance('buttonStyle', 'outline')}
+                  className={`py-3 px-2 rounded-lg border flex flex-col items-center justify-center gap-3 transition-all ${data.appearance.buttonStyle === 'outline' ? 'border-black ring-1 ring-black bg-slate-50' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}
+                >
+                  <div className="w-10 h-3 border border-slate-800 rounded-full"></div>
+                  <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">Contorno</span>
+                </button>
+
+                <button
+                  onClick={() => updateAppearance('buttonStyle', 'soft')}
+                  className={`py-3 px-2 rounded-lg border flex flex-col items-center justify-center gap-3 transition-all ${data.appearance.buttonStyle === 'soft' ? 'border-black ring-1 ring-black bg-slate-50' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}
+                >
+                  <div className="w-10 h-3 bg-slate-200 rounded-full"></div>
+                  <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">Suave</span>
+                </button>
+
+                <button
+                  onClick={() => updateAppearance('buttonStyle', 'shadow')}
+                  className={`py-3 px-2 rounded-lg border flex flex-col items-center justify-center gap-3 transition-all ${data.appearance.buttonStyle === 'shadow' ? 'border-black ring-1 ring-black bg-slate-50' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}
+                >
+                  <div className="w-10 h-3 bg-white border-2 border-black rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"></div>
+                  <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">Sombra</span>
                 </button>
               </div>
             </div>

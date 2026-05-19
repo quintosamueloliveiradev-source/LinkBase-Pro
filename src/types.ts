@@ -2,20 +2,25 @@ export interface ProfileLink {
   id: string;
   title: string;
   url: string;
+  icon?: string;
+  animation?: 'none' | 'pulse' | 'bounce' | 'wobble';
 }
 
 export interface ProfileAppearance {
   backgroundColor: string;
+  backgroundType: 'solid' | 'gradient' | 'image';
+  gradientColors?: string;
+  backgroundImage?: string;
   textColor: string;
   buttonColor: string;
   buttonTextColor: string;
-  buttonStyle: 'rounded' | 'pill' | 'square';
-  fontFamily: 'font-sans' | 'font-outfit';
+  buttonStyle: 'rounded' | 'pill' | 'square' | 'outline' | 'shadow' | 'soft';
+  fontFamily: 'font-sans' | 'font-outfit' | 'font-mono' | 'font-serif';
 }
 
 export interface SocialLink {
   id: string;
-  platform: 'instagram' | 'twitter' | 'github' | 'linkedin' | 'youtube' | 'facebook' | 'tiktok' | 'mail';
+  platform: 'instagram' | 'twitter' | 'github' | 'linkedin' | 'youtube' | 'facebook' | 'tiktok' | 'mail' | 'whatsapp' | 'telegram';
   url: string;
 }
 
@@ -23,6 +28,7 @@ export interface ProfileData {
   name: string;
   bio: string;
   avatarUrl: string;
+  verified?: boolean;
   links: ProfileLink[];
   socials: SocialLink[];
   appearance: ProfileAppearance;
@@ -32,6 +38,7 @@ export const defaultData: ProfileData = {
   name: "Seu Nome",
   bio: "Bem-vindo(a) à minha página! Aqui você encontra todos os meus links e redes sociais.",
   avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&h=256&q=80",
+  verified: false,
   links: [
     { id: '1', title: 'Acesse meu Portfólio', url: 'https://example.com' },
     { id: '2', title: 'Siga-me no Instagram', url: 'https://instagram.com' }
@@ -39,6 +46,7 @@ export const defaultData: ProfileData = {
   socials: [],
   appearance: {
     backgroundColor: '#f3f4f6', 
+    backgroundType: 'solid',
     textColor: '#111827',
     buttonColor: '#111827',
     buttonTextColor: '#ffffff',
